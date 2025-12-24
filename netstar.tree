@@ -1,0 +1,264 @@
+\--[+] netstar
+    \--[+] build
+    |   \ ...
+    |
+    \--[+] lib
+    |   \--[+] buffers
+    |   |   \ buffers.c
+    |   |   \ buffers.h
+    |   |
+    |   \--[+] collections
+    |   |   \--[+] hashmap
+    |   |   |   \ hashmap.c
+    |   |   |   \ hashmap.h
+    |   |   |
+    |   |   \--[+] hashset
+    |   |   |   \ hashset.c
+    |   |   |   \ hashset.h
+    |   |   |
+    |   |   \--[+] list
+    |   |   |   \ list.c
+    |   |   |   \ list.h
+    |   |   |
+    |   |   \--[+] map
+    |   |   |   \ map.c
+    |   |   |   \ map.h
+    |   |   |
+    |   |   \--[+] queue
+    |   |   |   \ queue.c
+    |   |   |   \ queue.h
+    |   |   |
+    |   |   \--[+] rbset
+    |   |   |   \ rbset.c
+    |   |   |   \ rbset.h
+    |   |   |
+    |   |   \--[+] set
+    |   |   |   \ set.c
+    |   |   |   \ set.h
+    |   |   |
+    |   |   \ collections.c
+    |   |   \ collections.h
+    |   |
+    |   \--[+] console
+    |   |   \--[+] arguments
+    |   |   |   \ arguments.c
+    |   |   |   \ arguments.h
+    |   |   |
+    |   |   \--[+] colored
+    |   |   |   \ colored.c
+    |   |   |   \ colored.h
+    |   |   |
+    |   |   \ console-unix.c
+    |   |   \ console-unix.h
+    |   |   \ console-windows.c
+    |   |   \ console-windows.h
+    |   |   \ console.c
+    |   |   \ console.h
+    |   |
+    |   \--[+] fnv1a
+    |   |   \ fnv1a.c
+    |   |   \ fnv1a.h
+    |   |
+    |   \--[+] network
+    |   |   \--[+] dns
+    |   |   |   \ dns.c
+    |   |   |   \ dns.h
+    |   |   |
+    |   |   \--[+] iana
+    |   |   |   \ iana.c
+    |   |   |   \ iana.h
+    |   |   |
+    |   |   \--[+] inet
+    |   |   |   \ inet-v4.c
+    |   |   |   \ inet-v4.h
+    |   |   |   \ inet-v6.c
+    |   |   |   \ inet-v6.h
+    |   |   |   \ inet.c
+    |   |   |   \ inet.h
+    |   |   |
+    |   |   \--[+] macieee802
+    |   |   |   \ macieee802.c
+    |   |   |   \ macieee802.h
+    |   |   |
+    |   |   \--[+] netlink
+    |   |   |   \ netlink-bsd.c
+    |   |   |   \ netlink-bsd.h
+    |   |   |   \ netlink-darwin.c
+    |   |   |   \ netlink-darwin.h
+    |   |   |   \ netlink-errors.c
+    |   |   |   \ netlink-errors.h
+    |   |   |   \ netlink-linux.c
+    |   |   |   \ netlink-linux.h
+    |   |   |   \ netlink-null.c
+    |   |   |   \ netlink-null.h
+    |   |   |   \ netlink-unix.c
+    |   |   |   \ netlink-unix.h
+    |   |   |   \ netlink-windows.c
+    |   |   |   \ netlink-windows.h
+    |   |   |   \ netlink.c
+    |   |   |   \ netlink.h
+    |   |   |
+    |   |   \--[+] netpacket
+    |   |   |   \ netpacket-bpf.c
+    |   |   |   \ netpacket-bpf.h
+    |   |   |   \ netpacket-bsd.c
+    |   |   |   \ netpacket-bsd.h
+    |   |   |   \ netpacket-darwin.c
+    |   |   |   \ netpacket-darwin.h
+    |   |   |   \ netpacket-errors.c
+    |   |   |   \ netpacket-errors.h
+    |   |   |   \ netpacket-linux.c
+    |   |   |   \ netpacket-linux.h
+    |   |   |   \ netpacket-null.c
+    |   |   |   \ netpacket-null.h
+    |   |   |   \ netpacket-windows.c
+    |   |   |   \ netpacket-windows.h
+    |   |   |   \ netpacket.c
+    |   |   |   \ netpacket.h
+    |   |   |
+    |   |   \--[+] resolv
+    |   |   |   \ resolv-errors.c
+    |   |   |   \ resolv-errors.h
+    |   |   |   \ resolv.c
+    |   |   |   \ resolv.h
+    |   |   |
+    |   |   \--[+] sockets
+    |   |   |   \ sockets-afd-reactor.c
+    |   |   |   \ sockets-afd-reactor.h
+    |   |   |   \ sockets-epoll-reactor.c
+    |   |   |   \ sockets-epoll-reactor.h
+    |   |   |   \ sockets-errors.c
+    |   |   |   \ sockets-errors.h
+    |   |   |   \ sockets-events.c
+    |   |   |   \ sockets-events.h
+    |   |   |   \ sockets-handler.c
+    |   |   |   \ sockets-handler.h
+    |   |   |   \ sockets-kqueue-reactor.c
+    |   |   |   \ sockets-kqueue-reactor.h
+    |   |   |   \ sockets-options.c
+    |   |   |   \ sockets-options.h
+    |   |   |   \ sockets-poll-reactor.c
+    |   |   |   \ sockets-poll-reactor.h
+    |   |   |   \ sockets-reactor-interrupter.c
+    |   |   |   \ sockets-reactor-interrupter.h
+    |   |   |   \ sockets-select-reactor.c
+    |   |   |   \ sockets-select-reactor.h
+    |   |   |   \ sockets-unix.c
+    |   |   |   \ sockets-unix.h
+    |   |   |   \ sockets-windows.c
+    |   |   |   \ sockets-windows.h
+    |   |   |   \ sockets.c
+    |   |   |   \ sockets.h
+    |   |   |
+    |   |   \ network-endpoint.c
+    |   |   \ network-endpoint.h
+    |   |   \ network.c
+    |   |   \ network.h
+    |   |
+    |   \--[+] random
+    |   |   \ random.c
+    |   |   \ random.h
+    |   |
+    |   \--[+] strings
+    |   |   \ strings.c
+    |   |   \ strings.h
+    |   |
+    |   \--[+] system
+    |       \ system-errors.c
+    |       \ system-errors.h
+    |       \ system-target-architectures.h
+    |       \ system-target-names.h
+    |       \ system.c
+    |       \ system.h
+    |
+    \--[+] release
+    |   \ release
+    |   \ release.exe
+    |
+    \--[+] share
+    |   \--[+] dns
+    |   |   \ netstar-dns-poisoning-resources.rules
+    |   |
+    |   \--[+] redirect
+    |   |   \ netstar-redirect-prerouting.rules
+    |   |
+    |   \--[+] server
+    |   |   \--[+] certificates
+    |   |   |   \ cert.pem
+    |   |   |   \ key.pem
+    |   |   |
+    |   |   \ index.html
+    |   |   \ netstar.ico
+    |   |   \ netstar.png
+    |   |   \ netstar-large.ico
+    |   |   \ netstar-large.png
+    |   |
+    |   \--[+] vendors
+    |       \ netstar-vendors-mac.list
+    |
+    \--[+] src
+        \--[+] netstar-dissectors
+        |   \ netstar-arp.c
+        |   \ netstar-dissector.c
+        |   \ netstar-dns.c
+        |   \ netstar-ethernet.c
+        |   \ netstar-gre.c
+        |   \ netstar-http.c
+        |   \ netstar-icmpv4.c
+        |   \ netstar-icmpv6.c
+        |   \ netstar-igmp.c
+        |   \ netstar-ipv4.c
+        |   \ netstar-ipv6.c
+        |   \ netstar-mdns.c
+        |   \ netstar-tcp.c
+        |   \ netstar-udp.c
+        |
+        \ netstar-arp-spoofing.c
+        \ netstar-arp-spoofing.h
+        \ netstar-capture.c
+        \ netstar-capture.h
+        \ netstar-commands.c
+        \ netstar-commands.h
+        \ netstar-dns-spoofing.c
+        \ netstar-dns-spoofing.h
+        \ netstar-filter.c
+        \ netstar-filter.h
+        \ netstar-format.c
+        \ netstar-format.h
+        \ netstar-forward.c
+        \ netstar-forward.h
+        \ netstar-hosts.c
+        \ netstar-hosts.h
+        \ netstar-http-server.c
+        \ netstar-http-server.h
+        \ netstar-log.c
+        \ netstar-log.h
+        \ netstar-main.c
+        \ netstar-monitor.c
+        \ netstar-monitor.h
+        \ netstar-ndp-spoofing.c
+        \ netstar-ndp-spoofing.h
+        \ netstar-packet.c
+        \ netstar-packet.h
+        \ netstar-recon.c
+        \ netstar-recon.h
+        \ netstar-redirect.c
+        \ netstar-redirect.h
+        \ netstar-services.c
+        \ netstar-services.h
+        \ netstar-scanner.c
+        \ netstar-scanner.h
+        \ netstar-stealth.c
+        \ netstar-stealth.h
+        \ netstar-terminate.c
+        \ netstar-terminate.h
+        \ netstar-threads.c
+        \ netstar-threads.h
+        \ netstar-time.c
+        \ netstar-time.h
+        \ netstar-utils.c
+        \ netstar-utils.h
+        \ netstar-vendors.c
+        \ netstar-vendors.h
+        \ netstar.c
+        \ netstar.h

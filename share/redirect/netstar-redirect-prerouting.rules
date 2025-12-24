@@ -1,0 +1,21 @@
+#################################################################################################
+#
+# Netstar redirect prerouting rules
+#
+#
+# Syntax:
+#
+#     <protocol> <destination port> <redirection port>
+#
+# <protocol>         TCP or UDP ppotocols are supported
+#
+# <destination port> intercepted/captured packet destination port
+#
+# <redirection port> redirection port service
+#
+# Examples:
+#
+# tcp    80       8080     # Redirect HTTP port to an localhost server listening on 8080
+# tcp    443      8443     # Redirect HTTPS port to an localhost server listening on 8443
+# udp    53       8053     # Redirect DNS port to an localhost server listening on 8053
+#

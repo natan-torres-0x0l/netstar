@@ -1,0 +1,38 @@
+#ifndef _RANDOM_RANDOM_H
+#define _RANDOM_RANDOM_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdint.h>
+
+#define generic _Generic
+
+
+#define random(type) generic(((type)0), int8_t   : random_int8()  , \
+                                        int16_t  : random_int16() , \
+                                        int32_t  : random_int32() , \
+                                        int64_t  : random_int64() , \
+                                        uint8_t  : random_uint8() , \
+                                        uint16_t : random_uint16(), \
+                                        uint32_t : random_uint32(), \
+                                        uint64_t : random_uint64())
+
+extern int8_t  random_int8(void);
+extern uint8_t  random_uint8(void);
+
+extern int16_t random_int16(void);
+extern uint16_t random_uint16(void);
+
+extern int32_t random_int32(void);
+extern uint32_t random_uint32(void);
+
+extern int64_t random_int64(void);
+extern uint64_t random_uint64(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

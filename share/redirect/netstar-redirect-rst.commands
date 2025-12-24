@@ -1,0 +1,23 @@
+#################################################################################################
+#
+# Netstar redirect drop TCP RST packets at kernel level
+#
+
+################################
+# Windows - WinDivert netfilter
+#
+
+netfilter "tcp and tcp.Rst" drop # "tcp.Flags & 0x04 != 0" drop
+
+################################
+# Linux - iptables
+#
+
+sudo iptables -A INPUT -p tcp --tcp-flags RST RST -j DROP
+sudo iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP
+
+################################
+# Darwin/FreeBSD/OpenBSD - pf
+#
+
+echo "block drop proto tcp from any to any flags R/R" | sudo pfctl -a rstblock -f -

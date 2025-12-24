@@ -1,0 +1,27 @@
+#################################################################################################
+#
+# Netstar DNS spoofing resources
+#
+#
+# Syntax:
+#
+#     <hostname/address> <query type> <result>
+#
+# <hostname/address> name or IPv4/IPv6 address that will be resolved based on the query
+#
+# <query type>       DNS query type
+#    - DNS query types supported:
+#      - A     For resolving a domain to an IPv4 address
+#      - AAAA  For resolving a domain to an IPv6 address
+#      - PTR   For reverse DNS lookups, where an IPv4/IPv6 address resolves to a name
+#
+# <result>           resolved IPv4/IPv6 address or hostname based on the query type
+#    - For A or AAAA queries, this would be an IPv4/IPv6 address
+#    - For PTR queries, this would be the resolved name
+#
+# Examples:
+#
+# google.com    A       192.168.1.1     # Resolves google.com to an IPv4 address
+# google.com    AAAA    192.168.1.1     # Resolves google.com to an IPv6 address
+# 142.167.3.1   PTR     google.com      # Resolves the IP address to a domain name (reverse DNS)
+#
