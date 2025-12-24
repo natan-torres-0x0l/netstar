@@ -701,7 +701,7 @@ netstar_packet_buildtcp(netstar_packet_t *packet, netstar_packet_block_t *rblock
 
 netstar_packet_block_t *
 netstar_packet_buildtcpoptions(netstar_packet_t *packet, netstar_packet_block_t *rblock, const uint8_t *options, uint8_t options_size) {
-  struct netstar_packet_block *block = NULL, *brench_block = NULL;
+  struct netstar_packet_block *block = NULL, *branch_block = NULL;
   struct netstar_tcphdr *tcph = NULL;
 
   if ((!(options_size % 4 == 0) && !(options_size -= (options_size % 4))) || options_size > NETSTAR_TCP_OPTIONS_SIZE)
@@ -710,25 +710,13 @@ netstar_packet_buildtcpoptions(netstar_packet_t *packet, netstar_packet_block_t 
   if (!(block = netstar_packet_block_reference(packet, rblock, NETSTAR_PACKET_BLOCK_PROTOCOL_TCP_OPTION, options_size)))
     return NULL;
 
-  if ((brench_block = netstar_packet_block_protocol_find(block, NETSTAR_PACKET_BLOCK_PROTOCOL_TCP))) {
-    tcph = (struct netstar_tcphdr *)buffer_ptr(brench_block->buffer);
+  if ((branch_block = netstar_packet_block_protocol_find(block, NETSTAR_PACKET_BLOCK_PROTOCOL_TCP))) {
+    tcph = (struct netstar_tcphdr *)buffer_ptr(branch_block->buffer);
     tcph->data_offset += options_size/4;
 
- // brench_block->length = tcph->data_offset*4;
-    block->reference = brench_block;
+ // branch_block->length = tcph->data_offset*4;
+    block->reference = branch_block;
   }
-
-#if false
-  for (parent_block = block->parent; parent_block; parent_block = parent_block->parent)
-    if (parent_block->protocol == NETSTAR_PACKET_BLOCK_PROTOCOL_TCP) {
-      tcph = (struct netstar_tcphdr *)buffer_ptr(parent_block->buffer);
-      tcph->data_offset += options_size/4;
-   // parent_block->length += options_size;
-
-      block->reference = parent_block;
-      break;
-    }
-#endif
 
   buffer_append(block->buffer, options, options_size);
 
