@@ -1,5 +1,4 @@
 #include "netstar-dissectors.h"
-#include "netstar-icmpv4.h"
 
 #include <netstar.h>
 
@@ -9,7 +8,7 @@ struct netstar_icmp_type {
   const char *description;
 };
 
-struct netstar_icmp_type netstar_icmp_types[] = {
+static struct netstar_icmp_type netstar_icmp_types[] = {
   { NETSTAR_ICMP_TYPE_ECHO_REPLY             , "Echo reply"              },
   { NETSTAR_ICMP_TYPE_ECHO                   , "Echo request"            },
   { NETSTAR_ICMP_TYPE_DESTINATION_UNREACHABLE, "Destination unreachable" },

@@ -1,5 +1,4 @@
 #include "netstar-dissectors.h"
-// #include "netstar-mdns.h"
 
 #include <network/dns/dns.h>
 

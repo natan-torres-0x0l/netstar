@@ -1,5 +1,4 @@
 #include "netstar-dissectors.h"
-// #include "netstar-udp.h"
 
 #include <strings/strings.h>
 

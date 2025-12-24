@@ -1,5 +1,4 @@
 #include "netstar-dissectors.h"
-#include "netstar-gre.h"
 
 #include <netstar.h>
 

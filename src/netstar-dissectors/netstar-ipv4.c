@@ -1,5 +1,4 @@
 #include "netstar-dissectors.h"
-#include "netstar-ipv4.h"
 
 #include <netstar-vendors.h>
 

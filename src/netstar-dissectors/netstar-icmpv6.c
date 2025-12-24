@@ -1,5 +1,4 @@
 #include "netstar-dissectors.h"
-#include "netstar-icmpv6.h"
 
 #include <netstar.h>
 

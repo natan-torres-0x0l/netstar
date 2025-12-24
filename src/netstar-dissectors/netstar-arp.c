@@ -1,5 +1,4 @@
 #include "netstar-dissectors.h"
-#include "netstar-arp.h"
 
 #include <netstar-vendors.h>
 

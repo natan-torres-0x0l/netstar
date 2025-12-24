@@ -1,5 +1,4 @@
 #include "netstar-dissectors.h"
-// #include "netstar-http.h"
 
 #include <strings/strings.h>
 
