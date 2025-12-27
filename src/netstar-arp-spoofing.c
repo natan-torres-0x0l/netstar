@@ -38,10 +38,16 @@ netstar_arp_broadcast_spoofing_confirm(netstar_t *netstar, struct netstar_captur
     return;
 
   if (netstar_hosts_findipaddr4(spoofing_attack->spoofed_hosts, &packet->layer3.daddr.v4)) {
-    char saddr[NETWORK_IPADDR4_STRLENGTH] = {0};
+    char saddr[NETWORK_IPADDR4_STRLENGTH] = {0}, daddr[NETWORK_IPADDR4_STRLENGTH] = {0};
 
-    netstar_log("\b \b[ arp@broadcast-spoofing ]: %s ICMP Echo reply (0x%02" PRIX8 ")\r\n",
-      network_ipaddr4_format(&packet->layer3.saddr.v4, saddr, sizeof(saddr)), NETSTAR_ICMP_TYPE_ECHO_REPLY);
+    network_ipaddr4_format(&packet->layer3.saddr.v4, saddr, sizeof(saddr));
+    network_ipaddr4_format(&packet->layer3.daddr.v4, daddr, sizeof(daddr));
+
+    netstar_log("\b \b[ arp@broadcast-spoofing ]: %s %s ICMP Echo reply (0x%02" PRIX8 ") confirmation of spoofing for %s %s\r\n",
+      saddr, netstar_vendors_namebymac(&packet->layer2.smac),
+      NETSTAR_ICMP_TYPE_ECHO_REPLY,
+      daddr, netstar_vendors_namebymac(&packet->layer2.dmac)
+    );
   }
 }
 
@@ -55,12 +61,13 @@ netstar_arp_broadcast_spoofing(void *context) {
 
   netstar_timer_t timer = NETSTAR_TIMER_INITIALIZER;
 
-  netstar_log(
-    "\b \b[ arp@broadcast-spoofing ]: spoof-burst-interval: %" PRIu32 "s; "
-    "spoof-burst-count: %zu; spoof-steady-interval: %" PRIu32 "\r\n",
+  netstar_log("\b \b[ arp@broadcast-spoofing ]: spoof-burst-interval: %" PRIu32 "s; "
+              "spoof-burst-count: %zu; spoof-steady-interval: %" PRIu32 "s; "
+              "operation-code: %s\r\n",
     netstar_time_millisecstosecs(spoofing_attack->spoof_burst_interval),
     spoofing_attack->spoof_burst_count,
-    netstar_time_millisecstosecs(spoofing_attack->spoof_steady_interval)
+    netstar_time_millisecstosecs(spoofing_attack->spoof_steady_interval),
+    ((spoofing_attack->request) ? "request" : "reply")
   );
 
   netstar_recon_hosts4(netstar, spoofing_attack->spoofed_hosts);
@@ -73,7 +80,9 @@ netstar_arp_broadcast_spoofing(void *context) {
         netstar_host_t *spoofed_host = netstar_hosts_value(spoofed_hosts_iter);
         network_ipaddr4_t daddr = *netstar_utils_random_ipaddr4(&netstar->managed.iface->network, netstar->managed.iface->prefix);
 
-        netstar_sendarp(&netstar->managed, &netstar->managed.iface->mac, &MACIEEE802_BROADCAST, NETSTAR_ARP_OPCODE_REQUEST, &netstar->managed.iface->mac, &spoofed_host->addr.v4, &MACIEEE802_BROADCAST, &daddr);
+        uint16_t opcode = ((spoofing_attack->request) ? NETSTAR_ARP_OPCODE_REQUEST : NETSTAR_ARP_OPCODE_REPLY);
+
+        netstar_sendarp(&netstar->managed, &netstar->managed.iface->mac, &MACIEEE802_BROADCAST, opcode, &netstar->managed.iface->mac, &spoofed_host->addr.v4, &MACIEEE802_BROADCAST, &daddr);
 
 #ifdef NETSTAR_DEBUG
         {
@@ -81,13 +90,12 @@ netstar_arp_broadcast_spoofing(void *context) {
 
           network_ipaddr4_format(&spoofed_host->addr.v4, saddr, sizeof(saddr));
 
-          netstar_log("\b \b[ arp@broadcast-spoofing ] %s %s ARP Request (0x%04" PRIX16 ") via FF:FF:FF:FF:FF:FF\r\n",
+          netstar_log("\b \b[ arp@broadcast-spoofing ] %s %s ARP %s (0x%04" PRIX16 ") via FF:FF:FF:FF:FF:FF\r\n",
             saddr, netstar_vendors_namebymac(&spoofed_host->mac),
-            NETSTAR_ARP_OPCODE_REQUEST
+            ((spoofing_attack->request) ? "Request" : "Reply"), opcode
           );
         }
 #endif
-
         netstar_time_sleep(20);
       }
 
@@ -106,10 +114,12 @@ netstar_arp_broadcast_spoofing_new(struct netstar_arp_broadcast_spoofing *spoofi
   if (!(spoofing_attack->spoofed_hosts = netstar_hosts_new()))
     goto _return;
 
-  spoofing_attack->spoof_burst_interval = ((spoofing_attack->spoof_burst_interval) ?: netstar_time_secstomillisecs(1));
-  spoofing_attack->spoof_burst_count    = 10;
+  spoofing_attack->spoof_burst_interval  = ((spoofing_attack->spoof_burst_interval) ?: netstar_time_secstomillisecs(1));
+  spoofing_attack->spoof_burst_count     = 10;
 
   spoofing_attack->spoof_steady_interval = ((spoofing_attack->spoof_steady_interval) ?: netstar_time_secstomillisecs(4));
+
+  spoofing_attack->request = true;
 
   spoofing_attack->netstar = netstar;
 
@@ -192,6 +202,16 @@ netstar_arp_network_spoofing_respond(netstar_t *netstar, struct netstar_capture_
   struct netstar_arp_network_spoofing *spoofing_attack = (struct netstar_arp_network_spoofing *)args;
 
   if (netstar_hosts_findipaddr4(spoofing_attack->spoofed_hosts, &packet->layer3.daddr.v4)) {
+    char saddr[NETWORK_IPADDR4_STRLENGTH] = {0}, daddr[NETWORK_IPADDR4_STRLENGTH] = {0};
+
+    network_ipaddr4_format(&packet->layer3.saddr.v4, saddr, sizeof(saddr));
+    network_ipaddr4_format(&packet->layer3.daddr.v4, daddr, sizeof(daddr));
+
+    netstar_log("\b \b[ arp@broadcast-spoofing ]: %s %s %s %s\r\n",
+      saddr, netstar_vendors_namebymac(&packet->layer2.smac),
+      daddr, netstar_vendors_namebymac(&packet->layer2.dmac)
+    );
+
     netstar_sendicmpecho(&netstar->managed, &netstar->managed.iface->mac, &packet->layer2.smac, NETSTAR_ICMP_TYPE_ECHO, &packet->layer3.daddr.v4, &packet->layer3.saddr.v4);
 
     netstar_sendarp(&netstar->managed, &netstar->managed.iface->mac, &packet->layer2.smac, NETSTAR_ARP_OPCODE_REPLY, &netstar->managed.iface->mac, &packet->layer3.daddr.v4, &packet->layer2.smac, &packet->layer3.saddr.v4);
@@ -213,10 +233,16 @@ netstar_arp_network_spoofing_confirm(netstar_t *netstar, struct netstar_capture_
     return;
 
   if (netstar_hosts_findipaddr4(spoofing_attack->spoofed_hosts, &packet->layer3.daddr.v4)) {
-    char saddr[NETWORK_IPADDR4_STRLENGTH] = {0};
+    char saddr[NETWORK_IPADDR4_STRLENGTH] = {0}, daddr[NETWORK_IPADDR4_STRLENGTH] = {0};
 
-    netstar_log("\b \b[ arp@network-spoofing ]: %s ICMP Echo reply (0x%02" PRIX8 ")\r\n",
-      network_ipaddr4_format(&packet->layer3.saddr.v4, saddr, sizeof(saddr)), NETSTAR_ICMP_TYPE_ECHO_REPLY);
+    network_ipaddr4_format(&packet->layer3.saddr.v4, saddr, sizeof(saddr));
+    network_ipaddr4_format(&packet->layer3.daddr.v4, daddr, sizeof(daddr));
+
+    netstar_log("\b \b[ arp@network-spoofing ]: %s %s ICMP Echo reply (0x%02" PRIX8 ") confirmation of spoofing for %s %s\r\n",
+      saddr, netstar_vendors_namebymac(&packet->layer2.smac),
+      NETSTAR_ICMP_TYPE_ECHO_REPLY,
+      daddr, netstar_vendors_namebymac(&packet->layer2.dmac)
+    );
   }
 }
 
@@ -230,15 +256,15 @@ netstar_arp_network_spoofing(void *context) {
 
   netstar_timer_t timer = NETSTAR_TIMER_INITIALIZER;
 
-  netstar_log(
-    "\b \b[ arp@network-spoofing ]: network-scan-interval: %" PRIu32 "s; "
-                                   "spoof-burst-interval: %" PRIu32 "s; "
-                                   "spoof-burst-count: %zu; "
-                                   "spoof-steady-interval: %" PRIu32 "\r\n",
+  netstar_log("\b \b[ arp@network-spoofing ]: network-scan-interval: %" PRIu32 "s; "
+              "spoof-burst-interval: %" PRIu32 "s; spoof-burst-count: %zu; spoof-steady-interval: %" PRIu32 "s; "
+              "operation-code: %s; bidirectional: %s\r\n",
     netstar_time_millisecstosecs(spoofing_attack->network_scan_interval),
     netstar_time_millisecstosecs(spoofing_attack->spoof_burst_interval),
     spoofing_attack->spoof_burst_count,
-    netstar_time_millisecstosecs(spoofing_attack->spoof_steady_interval)
+    netstar_time_millisecstosecs(spoofing_attack->spoof_steady_interval),
+    ((spoofing_attack->request) ? "request" : "reply"),
+    ((spoofing_attack->bidirectional) ? "yes" : "no")
   );
 
   netstar_recon_hosts4(netstar, spoofing_attack->spoofed_hosts);
@@ -459,11 +485,17 @@ netstar_arp_spoofing_confirm(netstar_t *netstar, struct netstar_capture_packet *
   if (icmph->type != NETSTAR_ICMP_TYPE_ECHO_REPLY)
     return;
 
-  if (netstar_hosts_findipaddr4(spoofing_attack->spoofed_hosts, &packet->layer3.daddr.v4)) {
-    char saddr[NETWORK_IPADDR4_STRLENGTH] = {0};
+  if (netstar_hosts_findipaddr4(spoofing_attack->spoofed_hosts, &packet->layer3.daddr.v4) || netstar_hosts_findipaddr4(spoofing_attack->target_hosts, &packet->layer3.daddr.v4)) {
+    char saddr[NETWORK_IPADDR4_STRLENGTH] = {0}, daddr[NETWORK_IPADDR4_STRLENGTH] = {0};
 
-    netstar_log("\b \b[ arp@spoofing ]: %s ICMP Echo reply (0x%02" PRIX8 ")\r\n",
-      network_ipaddr4_format(&packet->layer3.saddr.v4, saddr, sizeof(saddr)), NETSTAR_ICMP_TYPE_ECHO_REPLY);
+    network_ipaddr4_format(&packet->layer3.saddr.v4, saddr, sizeof(saddr));
+    network_ipaddr4_format(&packet->layer3.daddr.v4, daddr, sizeof(daddr));
+
+    netstar_log("\b \b[ arp@nspoofing ]: %s %s ICMP Echo reply (0x%02" PRIX8 ") confirmation of spoofing for %s %s\r\n",
+      saddr, netstar_vendors_namebymac(&packet->layer2.smac),
+      NETSTAR_ICMP_TYPE_ECHO_REPLY,
+      daddr, netstar_vendors_namebymac(&packet->layer2.dmac)
+    );
   }
 }
 
@@ -478,11 +510,13 @@ netstar_arp_spoofing(void *context) {
   netstar_timer_t timer = NETSTAR_TIMER_INITIALIZER;
 
   netstar_log("\b \b[ arp@spoofing ]: spoof-burst-interval: %" PRIu32 "s; "
-                                     "spoof-burst-count: %zu; "
-                                     "spoof-steady-interval: %" PRIu32 "\r\n",
+              "spoof-burst-count: %zu; spoof-steady-interval: %" PRIu32 "s; "
+              "operation-code: %s; bidirectional: %s\r\n",
     netstar_time_millisecstosecs(spoofing_attack->spoof_burst_interval),
     spoofing_attack->spoof_burst_count,
-    netstar_time_millisecstosecs(spoofing_attack->spoof_steady_interval)
+    netstar_time_millisecstosecs(spoofing_attack->spoof_steady_interval),
+    ((spoofing_attack->request) ? "request" : "reply"),
+    ((spoofing_attack->bidirectional) ? "yes" : "no")
   );
 
   if (spoofing_attack->redirective) {
@@ -570,7 +604,7 @@ netstar_arp_spoofing_new(struct netstar_arp_spoofing *spoofing_attack, netstar_t
     goto _return;
 
   spoofing_attack->spoof_burst_interval  = ((spoofing_attack->spoof_burst_interval) ?: netstar_time_secstomillisecs(2));
-  spoofing_attack->spoof_burst_count      = 10;
+  spoofing_attack->spoof_burst_count     = 10;
 
   spoofing_attack->spoof_steady_interval = ((spoofing_attack->spoof_steady_interval) ?: netstar_time_secstomillisecs(4));
 
