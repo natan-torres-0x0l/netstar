@@ -298,8 +298,6 @@ netstar_thread_new(netstar_thread_routine_t routine, void *args) {
   if (!(thread = (netstar_thread_t *)calloc(1, sizeof(netstar_thread_t))))
     goto _return;
 
-  netstar_semaphore_initialize(&thread->cancellation_notifier, 0);
-
   thread->status = true;
   thread->args = args;
 
@@ -347,11 +345,6 @@ netstar_thread_t *
 netstar_thread_self(void) {
   pthread_t thread = pthread_self();
   return (netstar_thread_t *)map_getor(netstar_threads, &thread, sizeof(thread), NULL);
-}
-
-void
-netstar_thread_sleep(netstar_thread_t *thread, netstar_time_t secs) {
-  netstar_semaphore_timedwait(&thread->cancellation_notifier, secs);
 }
 
 void
@@ -415,10 +408,8 @@ void
 netstar_thread_kill(netstar_thread_t *thread) {
   if (thread && !thread->killed) {
     thread->status = false;
-    netstar_semaphore_post(&thread->cancellation_notifier);
     netstar_thread_join(thread, NULL);
 
-    netstar_semaphore_destroy(&thread->cancellation_notifier);
  // netstar_threads_remove(thread);
 
     thread->killed = true;

@@ -5,7 +5,6 @@
 extern "C" {
 #endif
 
-#include <netstar-semaphore.h>
 #include <netstar-time.h>
 
 #include <pthread.h>
@@ -41,7 +40,6 @@ extern void netstar_thread_cond_destroy(netstar_thread_cond_t *);
 
 
 typedef struct netstar_thread {
-  netstar_semaphore_t cancellation_notifier;
   netstar_thread_mutex_t mutex;
 
 // netstar_thread_attr_t attributes;
