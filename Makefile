@@ -352,7 +352,7 @@ $(RELEASE): $(NETSTAR_SOURCES_OBJECTS)
 
 define netstar_build_make_directory
 $(if $(filter $(SYSTEM),windows), \
-  @cmd /C if not exist "$(subst,/,\,$(dir $(1)))" mkdir "$(subst,/,\,$(dir $(1)))", \
+  @cmd /C if not exist "$(subst /,\,$(dir $(1)))" mkdir "$(subst /,\,$(dir $(1)))", \
   @mkdir -p $(dir $(1)))
 endef
 
