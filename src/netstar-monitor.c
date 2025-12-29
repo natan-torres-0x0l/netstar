@@ -117,15 +117,12 @@ netstar_monitor_start(void *context) {
   netstar_forward_add(netstar_monitor, NETSTAR_FORWARD_ANY, monitor);
 
   netstar_monitor_started = true;
-// netstar_log("#netstar-monitor started\r\n");
 }
 
 static void
 netstar_monitor_stop(void *context) {
   if (!netstar_monitor_started)
     return;
-
-// netstar_log("#netstar-monitor stopping...\r\n");
 
   netstar_forward_remove(netstar_monitor);
 

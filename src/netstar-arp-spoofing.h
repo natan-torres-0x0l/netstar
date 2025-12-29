@@ -21,6 +21,8 @@ struct netstar_arp_broadcast_spoofing {
 
   netstar_time_t spoof_steady_interval;
 
+  bool request;
+
   netstar_thread_t *thread;
 
   netstar_t *netstar;
