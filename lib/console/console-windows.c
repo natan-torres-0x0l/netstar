@@ -48,7 +48,7 @@ console_width(void) {
 
 int
 console_setbuffer(bool buffer) {
-  HANDLE console_output = GetStdHandle(STD_INPUT_HANDLE);
+  HANDLE console_input = GetStdHandle(STD_INPUT_HANDLE);
   DWORD console_mode = 0;
 
   if (!GetConsoleMode(console_input, &console_mode))
@@ -64,7 +64,7 @@ console_setbuffer(bool buffer) {
 
 int
 console_setecho(bool echo) {
-  HANDLE console_output = GetStdHandle(STD_INPUT_HANDLE);
+  HANDLE console_input = GetStdHandle(STD_INPUT_HANDLE);
   DWORD console_mode = 0;
 
   if (!GetConsoleMode(console_input, &console_mode))
