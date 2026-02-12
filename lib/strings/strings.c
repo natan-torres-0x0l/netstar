@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <string.h>
+
 #include <stdint.h>
 #include <stdarg.h>
 
@@ -10,618 +12,562 @@
 
 
 char *
-string_replace(const char *source, const char *pattern, const char *string, long count, bool sensitive) {
-  char *stringA = (char *)source, *stringB = (char *)source, *stringC = NULL, *stringX = NULL;
-  char *stringZ = NULL;
+string_replace(const char *string, const char *pattern, const char *substring, long count, bool match_case) {
+  size_t substring_length = string_length(substring);
+  size_t pattern_length = string_length(pattern);
+  size_t required_length;
 
-  size_t allocation_length, length = string_length(pattern);
+  const char *match = NULL;
+  size_t position;
 
-  if (count <= 0 && !(count = (long)string_count(source, pattern, sensitive)))
-    return string_new(source);
+  char *replaced = NULL;
+  size_t index = 0;
 
-  allocation_length = string_length(source)-(length*(size_t)count)+(string_length(string)*(size_t)count);
+  if (count <= 0 && !(count = (long)string_count(string, pattern, match_case)))
+    return string_new(string);
 
-  if (!(stringZ = (char *)calloc(allocation_length+1, sizeof(char))))
+  required_length = string_length(string)-(pattern_length*(size_t)count)+(substring_length*(size_t)count);
+
+  if (!(replaced = (char *)calloc(required_length+1, sizeof(char))))
     return NULL;
-  stringX = stringZ;
 
-  length = ((!length) ? sizeof(char) : length);
+  while (count && (match = string_search(string, pattern, match_case))) {
+    position = match-string;
 
-  for (;;) {
-    if ((stringB = string_search(stringB, pattern, sensitive)) && count) {
-      while (stringA < stringB)
-        *stringX++ = *stringA++;
+    string_copy(&replaced[index], string, position);
+    index += position;
 
-      for (stringC = (char *)string; *stringC;)
-        *stringX++ = *stringC++;
+    string = match+pattern_length;
 
-      stringA = (((stringB += length) && !*pattern) ? stringA : stringB);
-      count--;
+    string_copy(&replaced[index], substring, substring_length);
+    index += substring_length;
 
-      continue;
-    }
-
-    while (*stringA)
-      *stringX++ = *stringA++;
-
-    break;
+    count--;
   }
 
-  return stringZ;
+  if (*string)
+    string_copy(&replaced[index], string, string_length(string));
+
+  return replaced;
 }
 
 char **
-string_split(const char *source, const char *separator, bool sensitive) {
-  char *stringA = (char *)source, *stringB = (char *)((!*separator) ? source+1 : source), *stringX = NULL;
-  char **stringZ = NULL;
+string_split(const char *string, const char *separator, bool match_case) {
+  size_t count = string_count(string, separator, match_case);
+  size_t separator_length = string_length(separator);
+  size_t position;
 
-  size_t count = string_count(source, separator, sensitive), length = string_length(separator);
+  const char *match = string;
+  char **strings = NULL;
 
-  if ((*separator && !count) || !count++) {
-    if (!(stringZ = (char **)calloc(++count+1, sizeof(char *))))
+  if ((*separator && !count) || !count) {
+    if (!(strings = (char **)calloc(++count+1, sizeof(char *))))
       return NULL;
-    *stringZ = string_new(source);
+    *strings = string_new(string);
 
-    return stringZ;
+    return strings;
   }
-  if (!*separator && !(count = string_length(source)))
+  if (!*separator && !(count = string_length(string)))
     return NULL;
 
-  if (!(stringZ = (char **)calloc(count+1, sizeof(char *))))
+  if (!(strings = (char **)calloc(++count+1, sizeof(char *))))
     return NULL;
 
-  length = (!(length) ? sizeof(*separator) : length);
   count = 0;
 
   for (;;) {
-    if (!(stringB = string_search(stringB, separator, sensitive)))
-      stringB = stringA+string_length(stringA);
+    if (!(match = string_search(string, separator, match_case)))
+      match = string+string_length(string);
+    else if (!separator_length)
+      match = string+sizeof(char);
 
-    if (!(stringZ[count] = (char *)calloc((size_t)(stringB-stringA)+1, sizeof(char))))
-      break;
-    stringX = stringZ[count++];
+    position = match-string;
 
-    while (stringA < stringB)
-      *stringX++ = *stringA++;
-
-    if (!*stringB)
+    if (!(strings[count] = (char *)calloc(position+1, sizeof(char))))
       break;
 
-    stringA = (((stringB += length) && !*separator) ? stringA : stringB);
+    string_copy(strings[count], string, position);
+    count++;
+
+    if (!*match)
+      break;
+
+    string += separator_length+position;
   }
 
-  return stringZ;
+  return strings;
 }
 
 char *
 string_join(const char **strings, const char *separator) {
-  size_t separator_length = string_length(separator), length = 0, index;
-  const char *stringA = NULL;
-  char *stringX = NULL, *stringZ = NULL;
+  size_t separator_length = string_length(separator);
+  size_t required_length = 0, index;
+
+  char *string = NULL;
 
   for (index = 0; strings[index]; index++)
-    length += string_length(strings[index])+((strings[index+1]) ? separator_length : 0);
+    required_length += string_length(strings[index])+((strings[index+1]) ? separator_length : 0);
 
-  if (!(stringZ = (char *)calloc(length+1, sizeof(char))))
+  if (!(string = (char *)calloc(required_length+1, sizeof(char))))
     return NULL;
-  stringX = stringZ;
 
   for (index = 0; strings[index]; index++) {
-    for (stringA = strings[index]; *stringA;)
-      *stringX++ = *stringA++;
+    string_concat(string, strings[index], string_length(strings[index]));
 
     if (strings[index+1])
-      for (stringA = separator; *stringA;)
-        *stringX++ = *stringA++;
+      string_concat(string, separator, separator_length);
   }
 
-  return stringZ;
+  return string;
 }
 
 char **
-string_fields(const char *source) {
-  char *stringA = (char *)source, *stringB = NULL, *stringX = NULL;
-  char **stringZ = NULL;
-
-  size_t fields = 0;
+string_fields(const char *string) {
+  size_t count, index, characters;
   uint8_t space = 0;
 
-  for (;; stringA++) {
+  char **fields = NULL;
+
+  for (count = 0, index = 0;; index++) {
     // @ identify spaces and fields
     //   1 active bit = sequence of spaces
     //   2 active bits = sequence of a field
-    space = ((isspace(*stringA) || !*stringA) ? (((!(space & 1)) ? (space | 1) : space)) : ((!(space & (1 << 1))) ? (space | (1 << 1)) : space));
+    space = ((isspace(string[index]) || !string[index]) ? (((!(space & 1)) ? (space | 1) : space)) : ((!(space & (1 << 1))) ? (space | (1 << 1)) : space));
 
     if ((space & 1) && (space & (1 << 1)))
-      fields++, space = 0;
+      count++, space = 0;
 
-    if (!*stringA)
+    if (!string[index])
       break;
   }
 
-  if (!fields || !(stringZ = (char **)calloc(++fields+1, sizeof(char *))))
+  if (!count || !(fields = (char **)calloc(++count+1, sizeof(char *))))
     return NULL;
 
-  stringA = (char *)source;
-  fields = 0;
+  for (count = 0, index = 0;;) {
+    while (string[index] && isspace(string[index]))
+      index++;
 
-  for (;;) {
-    while (*stringA && isspace(*stringA))
-      stringA++;
-
-    if (!*stringA)
+    if (!string[index])
       break;
 
-    stringB = stringA;
-    while (*stringB && !isspace(*stringB))
-      stringB++;
+    characters = index;
+    while (string[characters] && !isspace(string[characters]))
+      characters++;
 
-    if (!(stringZ[fields] = (char *)calloc((size_t)((stringB-stringA)+1), sizeof(char))))
+    if (!(fields[count] = (char *)calloc(characters+1, sizeof(char))))
       break;
-    stringX = stringZ[fields++];
 
-    while (stringA < stringB)
-      *stringX++ = *stringA++;
+    string_copy(fields[count], &string[index], characters);
+    count++;
+
+    index = characters;
   }
 
-  return stringZ;
+  return fields;
 }
 
 char *
-string_repeat(const char *source, size_t times) {
-  size_t length = string_length(source)*times;
-  char *stringZ = NULL;
+string_repeat(const char *string, size_t times) {
+  size_t string_total_length = string_length(string);
+  size_t required_length = string_total_length*times;
+  char *repeated = NULL;
 
-  if (!(stringZ = (char *)calloc(length+1, sizeof(char))))
+  if (!(repeated = (char *)calloc(required_length+1, sizeof(char))))
     return NULL;
 
   while (times--)
-    string_concat(stringZ, source, length);
+    string_concat(repeated, string, string_total_length);
 
-  return stringZ;
+  return repeated;
 }
 
 char *
-string_write(char *source, const char *string, size_t length) {
-  char *stringA = source;
+string_copy(char *destination, const char *source, size_t bytes) {
+  bytes = string_safelength(source, bytes);
 
-  while (length && (*stringA++ = *string++))
-    length--;
-  while (length && --length)
-    *stringA++ = '\0';
+  memcpy(destination, source, bytes);
+  destination[bytes] = '\0';
 
-  return source;
+  return destination;
 }
 
 char *
-string_concat(char *source, const char *string, size_t length) {
-  char *stringA = source+string_length(source);
+string_concat(char *destination, const char *source, size_t bytes) {
+  size_t destination_length = string_length(destination);
+  bytes = string_safelength(source, bytes);
 
-  while (*string && length && --length)
-    *stringA++ = *string++;
+  memcpy(destination+destination_length, source, bytes);
+  destination[destination_length+bytes] = '\0';
 
-  *stringA = '\0';
-
-  return source;
+  return destination;
 }
 
 char *
-string_format(const char *fmt, ...) {
+string_format(const char *format, ...) {
   va_list args;
   int length;
 
-  char *stringZ = NULL;
+  char *formatted = NULL;
 
-  va_start(args, fmt);
-  if ((length = vsnprintf(NULL, 0, fmt, args)) < 0)
+  va_start(args, format);
+  if ((length = vsnprintf(NULL, 0, format, args)) < 0)
+    return NULL;
+  va_end(args);
+
+  if (!(formatted = (char *)calloc((size_t)length+1, sizeof(char))))
     return NULL;
 
-  if (!(stringZ = (char *)calloc((size_t)length+1, sizeof(char))))
-    return NULL;
+  va_start(args, format);
+  vsprintf(formatted, format, args);
 
-  va_start(args, fmt);
-  vsprintf(stringZ, fmt, args);
-
-  return stringZ;
+  return formatted;
 }
 
 char *
-string_safesearch(const char *source, size_t source_size, const char *string, size_t string_size, bool sensitive) {
-  const char *stringA = source, *stringB = NULL;
-  size_t sizeA, sizeB;
+string_search(const char *string, const char *substring, bool match_case) {
+  const char *match = NULL;
 
-  if (!source_size || !string_size)
-    return (char *)source;
+  while ((match = string_char(string, *substring, match_case))) {
+    if (string_match(match+sizeof(char), substring+sizeof(char), -1, match_case))
+      return (char *)match;
 
-  while (source_size && *source) {
-    sizeA = source_size, sizeB = string_size;
-    stringA = source, stringB = string;
-
-    if (!sensitive)
-      while (sizeA && *stringA && sizeB && *stringB && toupper((unsigned char)*stringA) == toupper((unsigned char)*stringB))
-        sizeA--, stringA++, sizeB--, stringB++;
-    else
-      while (sizeA && *stringA && sizeB && *stringB && *stringA == *stringB)
-        sizeA--, stringA++, sizeB--, stringB++;
-
-    if (!sizeB)
-      return (char *)source;
-
-    source_size--, source++;
+    string = match+sizeof(char);
   }
 
   return NULL;
 }
 
 long
-string_safefind(const char *source, size_t source_size, const char *string, size_t string_size, bool sensitive) {
-  char *stringA = NULL;
+string_find(const char *string, const char *substring, bool match_case) {
+  char *match = NULL;
 
-  if (!(stringA = string_safesearch(source, source_size, string, string_size, sensitive)))
+  if (!(match = string_search(string, substring, match_case)))
     return -1;
 
-  return (long)(stringA-source);
+  return (long)(match-string);
 }
 
 char *
-string_search(const char *source, const char *string, bool sensitive) {
-  char *stringA = (char *)source, *stringB = NULL, *stringC = NULL;
+string_char(const char *string, char character, bool match_case) {
+  while (*string && !string_char_equals(*string, character, match_case))
+    string++;
 
-  if (!*string)
-    return stringA;
-
-  while (*stringA) {
-    stringB = stringA, stringC = (char *)string;
-
-    if (!sensitive)
-      while (*stringB && *stringC && toupper(*stringB) == toupper(*stringC))
-        stringB++, stringC++;
-    else
-      while (*stringB && *stringC && *stringB == *stringC)
-        stringB++, stringC++;
-
-    if (!*stringC)
-      return stringA;
-
-    stringA++;
-  }
+  if (string_char_equals(*string, character, match_case))
+    return (char *)string;
 
   return NULL;
-}
-
-long
-string_find(const char *source, const char *string, bool sensitive) {
-  char *stringA = NULL;
-
-  if (!(stringA = string_search(source, string, sensitive)))
-    return -1;
-
-  return (long)(stringA-source);
 }
 
 size_t
-string_count(const char *source, const char *string, bool sensitive) {
-  size_t count = (!*string), length = string_length(string);
-  char *stringA = (char *)source;
+string_count(const char *string, const char *substring, bool match_case) {
+  const size_t substring_length = string_length(substring);
+  const char *match = NULL;
 
-  length = (!(length) ? sizeof(*string) : length);
+  size_t count = 0;
 
-  for (;;) {
-    if (!*stringA || !(stringA = string_search(stringA, string, sensitive)))
-      break;
-    count++, stringA += length;
+  if (!*substring)
+    return string_length(string);
+
+  while ((match = string_search(string, substring, match_case))) {
+    string = match+substring_length;
+    count++;
   }
 
   return count;
 }
 
 char *
-string_match(const char *source, const char *string, long end, bool sensitive) {
-  size_t length = ((end < 0) ? string_length(string) : (size_t)end);
+string_match(const char *string, const char *substring, long end, bool match_case) {
+  size_t limit = ((end < 0) ? string_length(substring) : (size_t)end);
 
-  const char *stringA = source, *stringB = string;
+  while (limit && *string && *substring && string_char_equals(*string, *substring, match_case))
+    limit--, string++, substring++;
 
-  if (!sensitive)
-    while (length && *stringA && *stringB && toupper(*stringA) == toupper(*stringB))
-      length--, stringA++, stringB++;
-  else
-    while (length && *stringA && *stringB && *stringA == *stringB)
-      length--, stringA++, stringB++;
-
-  if ((!*stringA && !*stringB) || !length)
-    return (char *)stringA;
+  if ((!*string && !*substring) || !limit)
+    return (char *)string;
 
   return NULL;
 }
 
 int
-string_compare(const char *source, const char *string, bool sensitive) {
-  const char *stringA = source, *stringB = string;
+string_compare(const char *string_left, const char *string_right, bool match_case) {
+  size_t string_left_length = string_length(string_left);
+  size_t string_right_length = string_length(string_right);
 
-  if (!sensitive)
-    while (*stringA && *stringB && toupper(*stringA) == toupper(*stringB))
-      stringA++, stringB++;
-  else
-    while (*stringA && *stringB && *stringA == *stringB)
-      stringA++, stringB++;
-
-  if ((!*stringA && *stringB))
+  if (string_left_length < string_right_length)
     return -1;
-  if ((*stringA && !*stringB))
+  if (string_left_length > string_right_length)
     return 1;
-  if (*stringA < *stringB)
+
+  while (*string_left && *string_right && string_char_equals(*string_left, *string_right, match_case))
+    string_left++, string_right++;
+
+  if (*string_left < *string_right)
     return -1;
-  if (*stringA > *stringB)
+  if (*string_left > *string_right)
     return 1;
 
   return 0;
 }
 
 bool
-string_equals(const char *source, const char *string, bool sensitive) {
-  return string_compare(source, string, sensitive) == 0;
+string_equals(const char *string_left, const char *string_right, bool match_case) {
+  return string_compare(string_left, string_right, match_case) == 0;
 }
 
 bool
-string_lthan(const char *source, const char *string) {
-  const char *stringA = source, *stringB = string;
-
-  while (*stringA && *stringB && *stringA == *stringB)
-    stringA++, stringB++;
-
-  if (isalpha(*stringA) && isalpha(*stringB))
-    return toupper(*stringA) < toupper(*stringB);
-
-  return ((!*stringA && *stringB) || *stringA < *stringB);
+string_startswith(const char *string, const char *prefix, bool match_case) {
+  return string_match(string, prefix, -1, match_case) != NULL;
 }
 
 bool
-string_lethan(const char *source, const char *string) {
-  if (string_equals(source, string, false))
-    return true;
+string_endswith(const char *string, const char *suffix, bool match_case) {
+  size_t string_total_length = string_length(string);
+  size_t suffix_length = string_length(suffix);
+  size_t at;
 
-  return string_lthan(source, string);
-}
-
-bool
-string_gthan(const char *source, const char *string) {
-  const char *stringA = source, *stringB = string;
-
-  while (*stringA && *stringB && *stringA == *stringB)
-    stringA++, stringB++;
-
-  if (isalpha(*stringA) && isalpha(*stringB))
-    return toupper(*stringA) > toupper(*stringB);
-
-  return ((*stringA && !*stringB) || *stringA > *stringB);
-}
-
-bool
-string_gethan(const char *source, const char *string) {
-  if (string_equals(source, string, false))
-    return true;
-
-  return string_gthan(source, string);
-}
-
-bool
-string_startswith(const char *source, const char *string, bool sensitive) {
-  size_t lengthA, lengthB;
-
-  if ((lengthB = string_length(string)) > (lengthA = string_length(source)))
+  if (suffix_length > string_total_length)
     return false;
 
-  return string_match(source, string, (long)lengthB, sensitive) != NULL;
-}
+  at = string_total_length-suffix_length;
 
-bool
-string_endswith(const char *source, const char *string, bool sensitive) {
-  size_t lengthA, lengthB;
-
-  if ((lengthB = string_length(string)) > (lengthA = string_length(source)))
-    return false;
-
-  return string_match(source+(lengthA-lengthB), string, (long)lengthB, sensitive) != NULL;
+  return string_match(string+at, suffix, -1, match_case) != NULL;
 }
 
 char *
-string_toreverse(char *source) {
-  char *stringA = source+string_length(source)-1, *stringB = source;
+string_toreverse(char *string) {
+  char *string_start = string, *string_end = string+string_length(string)-1;
   char character;
 
-  while (stringB < stringA)
-    character = *stringB, *stringB++ = *stringA, *stringA-- = character;
+  while (string_start < string_end)
+    character = *string_start, *string_start++ = *string_end, *string_end-- = character;
 
-  return source;
+  return string;
 }
 
 char *
-string_reverse(const char *source) {
-  char *stringZ = NULL;
+string_reverse(const char *string) {
+  char *reverse = NULL;
 
-  if (!(stringZ = string_new(source)))
+  if (!(reverse = string_new(string)))
     return NULL;
 
-  return string_toreverse(stringZ);
+  return string_toreverse(reverse);
 }
 
 char *
-string_toupper(char *source) {
-  char *stringA = source;
+string_toupper(char *string) {
+  char *uppercase = string;
 
-  while (*stringA)
-    *stringA = (char)toupper(*stringA), stringA++;
-
-  return source;
-}
-
-char *
-string_upper(const char *source) {
-  char *stringZ = NULL;
-
-  if (!(stringZ = string_new(source)))
-    return NULL;
-
-  return string_toupper(stringZ);
-}
-
-char *
-string_tolower(char *source) {
-  char *stringA = source;
-
-  while (*stringA)
-    *stringA = (char)tolower(*stringA), stringA++;
-
-  return source;
-}
-
-char *
-string_lower(const char *source) {
-  char *stringZ = NULL;
-
-  if (!(stringZ = string_new(source)))
-    return NULL;
-
-  return string_tolower(stringZ);
-}
-
-char *
-string_capitalize(const char *source) {
-  char *stringA = (char *)source, *stringX = NULL;
-  char *stringZ = NULL;
-
-  if (!(stringZ = (char *)calloc(string_length(source)+1, sizeof(char))))
-    return NULL;
-  stringX = stringZ;
-
-  while (*stringA) {
-    while (*stringA && !isalnum(*stringA))
-      *stringX++ = *stringA++;
-
-    *stringX++ = (char)toupper(*stringA++);
-
-    while (*stringA && isalnum(*stringA))
-      *stringX++ = (char)tolower(*stringA++);
+  while (*uppercase) {
+    *uppercase = (char)toupper(*uppercase);
+    uppercase++;
   }
 
-  return stringZ;
+  return string;
 }
 
-bool
-string_hasterminator(const char *string, size_t length) {
-  while (length && *string && length--)
+char *
+string_upper(const char *string) {
+  char *uppercase = NULL;
+
+  if (!(uppercase = string_new(string)))
+    return NULL;
+
+  return string_toupper(uppercase);
+}
+
+char *
+string_tolower(char *string) {
+  char *lowercase = string;
+
+  while (*lowercase) {
+    *lowercase = (char)tolower(*lowercase);
+    lowercase++;
+  }
+
+  return string;
+}
+
+char *
+string_lower(const char *string) {
+  char *lowercase = NULL;
+
+  if (!(lowercase = string_new(string)))
+    return NULL;
+
+  return string_tolower(lowercase);
+}
+
+char *
+string_capitalize(const char *string) {
+  size_t required_length = string_length(string);
+  char *capitalized = NULL;
+
+  bool capitalize = true;
+
+  char character;
+  size_t index = 0;
+
+  if (!(capitalized = (char *)calloc(required_length+1, sizeof(char))))
+    return NULL;
+
+  while (*string) {
+    character = *string;
+
+    if (capitalize && islower(character)) {
+      character = toupper(character);
+      capitalize = false;
+    } else if (!isalpha(character)) {
+      capitalize = true;
+    } else {
+      capitalize = false;
+    }
+
+    capitalized[index++] = character;
     string++;
+  }
 
-  return *string == '\0';
+  return capitalized;
 }
 
 bool
-string_isempty(const char *source) {
-  return !*source;
+string_isempty(const char *string) {
+  return !*string;
 }
 
 char *
-string_zero(char *source, size_t length) {
-  char *stringA = source;
+string_zero(char *string, size_t zeros) {
+  size_t index = 0;
 
-  while (length && --length)
-    *stringA++ = '\0';
+  while (zeros && --zeros)
+    string[index++] = '\0';
 
-  return source;
+  return string;
 }
 
 char *
-string_chomp(char *source) {
-  char *stringA = source+string_length(source)-1;
+string_trimleft(char *string, const char *sequence) {
+  size_t string_total_length = string_length(string);
+  char *string_left = string;
+  size_t offset;
 
-  while (*stringA && *stringA != '\n')
-    stringA--;
-  while (*stringA)
-    *stringA++ = '\0';
+  while (*string_left) {
+    size_t byte = 0;
 
-  return source;
-}
-
-size_t
-string_safelength(const char *source, size_t length) {
-  const char *stringA = source;
-
-  while (length && *stringA)
-    length--, stringA++;
-
-  return (size_t)(stringA-source-1);
-}
-
-size_t
-string_length(const char *source) {
-  const char *stringA = source;
-
-  while (*stringA++);
-
-  return (size_t)(stringA-source-1);
-}
-
-char **
-string_substrs(const char *source, const char *pattern_start, const char *pattern_end, bool sensitive) {
-  size_t count, pattern_start_length = string_length(pattern_start), pattern_end_length = string_length(pattern_end);
-  long start, end;
-
-  char *stringA = (char *)source;
-  char **stringZ = NULL;
-
-  if (!*pattern_start && !*pattern_end)
-    return string_split(source, "", sensitive);
-  if (!*pattern_start || !*pattern_end)
-    return NULL;
-
-  for (count = 0; (start = string_find(stringA, pattern_start, sensitive)) != -1 && (end = string_find(stringA, pattern_end, sensitive)) != -1; count++)
-    stringA += pattern_end_length+(size_t)(end+string_find(stringA, pattern_start, sensitive));
-
-  if (!count || !(stringZ = (char **)calloc(count+1, sizeof(char *))))
-    return NULL;
-
-  stringA = (char *)source;
-  count = 0;
-
-  while ((start = string_find(stringA, pattern_start, sensitive)) != -1 && (end = string_find(stringA, pattern_end, sensitive)) != -1) {
-    if (!(stringZ[count++] = string_substr(stringA, start+(long)pattern_start_length, end)))
+    while (sequence[byte] && *string_left != sequence[byte])
+      byte++;
+    if (!sequence[byte])
       break;
 
-    stringA += pattern_end_length+(size_t)(end+string_find(stringA, pattern_start, sensitive));
+    string_left++;
   }
 
-  return stringZ;
+  memmove(string, string_left, string_length(string_left));
+
+  offset = (string_total_length-(string_left-string));
+  memset(string+offset, 0, string_left-string);
+
+  return string;
 }
 
 char *
-string_substr(const char *source, long start, long end) {
-  char *stringA = (char *)source+start, *stringB = (char *)source+end, *stringX = NULL;
-  char *stringZ = NULL;
+string_trimright(char *string, const char *sequence) {
+  char *string_right = string+string_length(string)-1;
 
-// size_t length = string_length(source);
+  while (string_right > string) {
+    size_t byte = 0;
+
+    while (sequence[byte] && *string_right != sequence[byte])
+      byte++;
+    if (!sequence[byte])
+      break;
+
+    string_right--;
+  }
+
+  if (string_right > string)
+    memset(string_right+sizeof(char), 0, string_right-string);
+
+  return string;
+}
+
+char *
+string_trim(char *string, const char *sequence) {
+  return string_trimright(string_trimleft(string, sequence), sequence);
+}
+
+size_t
+string_length(const char *string) {
+  const char *string_end = string;
+
+  while (*string_end++);
+
+  return (size_t)(string_end-string-1);
+}
+
+char *
+string_substr(const char *string, long start, long end) {
+  size_t string_total_length = string_length(string);
+  size_t slice_length = (size_t)(end-start);
+  char *substring = NULL;
 
   if (start < 0 || end < 0 || start > end /* || start > (long)length || end > (long)length */)
     return NULL;
-
-  if (!(stringZ = (char *)calloc((size_t)(end-start)+1, sizeof(char))))
+  if (start > string_total_length || end > string_total_length)
     return NULL;
-  stringX = stringZ;
 
-  while (stringA < stringB)
-    *stringX++ = *stringA++;
+  if (!(substring = (char *)calloc(slice_length+1, sizeof(char))))
+    return NULL;
 
-  return stringZ;
+  string_copy(substring, string+start, string_total_length-slice_length);
+
+  return substring;
+}
+
+char **
+string_lines(const char *string) {
+  size_t count = string_count(string, "\n", true);
+
+  const char *match = NULL;
+  char **lines = NULL;
+
+  size_t position, line = 0;
+
+  if (!(lines = (char **)calloc(count, sizeof(char *))))
+    return NULL;
+
+  while ((match = string_char(string, '\n', true)) || (match = string_char(string, '\0', true))) {
+    position = (size_t)(match-string);
+
+    if (!(lines[line] = (char *)calloc(position+1, sizeof(char))))
+      break;
+
+    if (string[position] == '\r')
+      position--;
+
+    string_copy(lines[line], string, position);
+    line++;
+
+    if (!*match)
+      break;
+
+    string = match+sizeof(char);
+  }
+
+  return lines;
 }
 
 char *
 string_new(const char *source) {
-  size_t length = string_length(source);
+  size_t required_length = string_length(source);
   char *string = NULL;
 
-  if (!(string = (char *)calloc(length+1, sizeof(char))))
+  if (!(string = (char *)calloc(required_length+1, sizeof(char))))
     return NULL;
 
-  string_write(string, source, length);
+  string_copy(string, source, required_length);
 
   return string;
 }

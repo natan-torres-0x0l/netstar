@@ -151,7 +151,7 @@ netstar_stealth_interface_set_status(struct netlink_interface *iface, netstar_st
   if ((socket = socket_new(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_INVALID)
     goto _return;
 
-  string_write(ifreq.ifr_name, iface->name, IFNAMSIZ);
+  string_safecopy(ifreq.ifr_name, IFNAMSIZ, iface->name, string_length(iface->name));
 
   if (ioctl(socket, SIOCGIFFLAGS, &ifreq) == -1)
     goto _return;
@@ -178,7 +178,7 @@ netstar_stealth_interface_macieee802(struct netlink_interface *iface, const netw
   if ((socket = socket_new(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_INVALID)
     goto _return;
 
-  string_write(ifreq.ifr_name, iface->name, IFNAMSIZ);
+  string_safecopy(ifreq.ifr_name, IFNAMSIZ, iface->name, string_length(iface->name));
 
   if (ioctl(socket, SIOCGIFFLAGS, &ifreq) == -1)
     goto _return;
@@ -217,7 +217,7 @@ netstar_stealth_interface_set_status(struct netlink_interface *iface, netstar_st
   if ((socket = socket_new(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_INVALID)
     goto _return;
 
-  string_write(ifreq.ifr_name, iface->name, IFNAMSIZ);
+  string_safecopy(ifreq.ifr_name, IFNAMSIZ, iface->name, string_length(iface->name));
 
   if (ioctl(socket, SIOCGIFFLAGS, &ifreq) == -1)
     goto _return;

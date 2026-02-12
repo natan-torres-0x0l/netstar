@@ -88,7 +88,8 @@ CWFLAGS := -Wdeclaration-after-statement \
            -Wno-switch
          # -Wmissing-prototypes -Wstrict-prototypes
 
-CFLAGS += -O4 $(CDEFS) $(CINCLUDE) $(CWFLAGS) -fno-stack-protector -fno-common # -march=native
+CFLAGS += $(CDEFS) $(CINCLUDE) $(CWFLAGS) -fno-stack-protector -fno-common # -march=native
+# CFLAGS += -O4 $(CDEFS) $(CINCLUDE) $(CWFLAGS) -fno-stack-protector -fno-common # -march=native
 
 #
 # @ ld compiler linker flags
@@ -222,6 +223,7 @@ $(call netstar_build_sources,$(LIB)/network/iana/iana.c)
 $(call netstar_build_sources,$(LIB)/buffers/buffers.c)
 
 # @ lib/strings
+$(call netstar_build_sources,$(LIB)/strings/strings-safe.c)
 $(call netstar_build_sources,$(LIB)/strings/strings.c)
 
 # @ lib/random

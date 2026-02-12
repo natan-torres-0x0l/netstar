@@ -422,16 +422,12 @@ netstar_redirect_start(void *context) {
   netstar_forward_add(netstar_redirect_prerouting_snat, NETSTAR_FORWARD_LOOPBACK|NETSTAR_FORWARD_TCP|NETSTAR_FORWARD_UDP, redirect);
 
   netstar_redirect_started = true;
-
-  netstar_log("#netstar-redirect started\r\n");
 }
 
 static void
 netstar_redirect_stop(void *context) {
   if (!netstar_redirect_initialized || !netstar_redirect_started)
     return;
-
-  netstar_log("#netstar-redirect stopping...\r\n");
 
   netstar_forward_remove(netstar_redirect_prerouting_dnat);
   netstar_forward_remove(netstar_redirect_prerouting_snat);

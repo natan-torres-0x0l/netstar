@@ -198,7 +198,7 @@ netlink_interfaces(void) {
           if (!(iface = netlink_interfaces_hashmap_get(hashmap, (uint32_t)ifmsgh->ifm_index)))
             continue;
 
-          string_write(ifname, datalink_addr->sdl_data, datalink_addr->sdl_nlen);
+          string_safecopy(ifname, IF_NAMESIZE, datalink_addr->sdl_data, datalink_addr->sdl_nlen);
           iface->name = string_new(ifname);
 
           iface->mac = *(network_macaddr_t *)((uint8_t *)datalink_addr->sdl_data+datalink_addr->sdl_nlen);

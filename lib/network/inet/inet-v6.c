@@ -113,7 +113,7 @@ inetv6_format(const struct inetv6 *network, char *string, size_t length) {
   string_zero(source, sizeof(source));
 
   if (!memcmp(network, "\0\0\0\0\0\0\0\0\0\0\0\0", 12) && (network->u8[12] || network->u8[13])) { 
-    string_write(format, "::", sizeof(source));
+    string_copy(format, string_const("::"));
     format += 2;
 
     inetv4_format((struct inetv4 *)&network->u8[12], format, sizeof(source)-2);

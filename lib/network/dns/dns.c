@@ -318,7 +318,7 @@ network_dns_name_decode(network_dns_name_t name, const uint8_t *response, size_t
 
   if (index < response_length && response[index] == 0) {
     if (name)
-      string_write(name, ".", 1);
+      string_copy(name, string_const("."));
 
     *shift += 1;
     return 1;
@@ -417,7 +417,7 @@ network_dns_a_new(struct network_dns_a *a, network_dns_addr4_t addr) {
   if (network_ipaddr(addr) != NETWORK_IPADDR4)
     return -1;
 
-  string_write(a->a, addr, NETWORK_IPADDR4_STRLENGTH);
+  string_safecopy(a->a, sizeof(a), addr, NETWORK_IPADDR4_STRLENGTH);
 
   return NETWORK_IPADDR4_SIZE;
 }
@@ -427,7 +427,7 @@ network_dns_aaaa_new(struct network_dns_aaaa *aaaa, network_dns_addr6_t addr) {
   if (network_ipaddr(addr) != NETWORK_IPADDR6)
     return -1;
 
-  string_write(aaaa->aaaa, addr, NETWORK_IPADDR4_STRLENGTH);
+  string_safecopy(aaaa->aaaa, sizeof(aaaa), addr, NETWORK_IPADDR4_STRLENGTH);
 
   return NETWORK_IPADDR6_SIZE;
 }

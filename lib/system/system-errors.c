@@ -53,7 +53,7 @@ const char *
 system_error_reason(system_error_t error) {
 #if defined _POSIX_C_SOURCE // Using POSIX source implementation for strerror_r
   char *string = strerror_r(error, system_error_message, sizeof(system_error_message));
-  string_write(system_error_message, string, string_length(string));
+  string_safecopy(system_error_message, sizeof(system_error_message), string, string_length(string));
 #else // elif defined _GNU_SOURCE // Using GNU source implementation for strerror_r
   strerror_r(error, system_error_message, sizeof(system_error_message));
 #endif

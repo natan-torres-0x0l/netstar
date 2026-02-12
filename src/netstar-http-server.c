@@ -18,6 +18,79 @@
 #define NETSTAR_HTTP_SERVER_NAME             "netstar/1.0"
 #define NETSTAR_HTTP_SERVER_PROTOCOL_VERSION "HTTP/1.1"
 
+/* 1xx Informational */
+#define NETSTAR_HTTP_STATUS_CONTINUE                        "100 Continue"
+#define NETSTAR_HTTP_STATUS_SWITCHING_PROTOCOLS             "101 Switching Protocols"
+#define NETSTAR_HTTP_STATUS_PROCESSING                      "102 Processing"
+#define NETSTAR_HTTP_STATUS_EARLY_HINTS                     "103 Early Hints"
+
+/* 2xx Success */
+#define NETSTAR_HTTP_STATUS_OK                              "200 OK"
+#define NETSTAR_HTTP_STATUS_CREATED                         "201 Created"
+#define NETSTAR_HTTP_STATUS_ACCEPTED                        "202 Accepted"
+#define NETSTAR_HTTP_STATUS_NON_AUTHORITATIVE_INFO          "203 Non-Authoritative Information"
+#define NETSTAR_HTTP_STATUS_NO_CONTENT                      "204 No Content"
+#define NETSTAR_HTTP_STATUS_RESET_CONTENT                   "205 Reset Content"
+#define NETSTAR_HTTP_STATUS_PARTIAL_CONTENT                 "206 Partial Content"
+#define NETSTAR_HTTP_STATUS_MULTI_STATUS                    "207 Multi-Status"
+#define NETSTAR_HTTP_STATUS_ALREADY_REPORTED                "208 Already Reported"
+#define NETSTAR_HTTP_STATUS_IM_USED                         "226 IM Used"
+
+/* 3xx Redirection */
+#define NETSTAR_HTTP_STATUS_MULTIPLE_CHOICES                "300 Multiple Choices"
+#define NETSTAR_HTTP_STATUS_MOVED_PERMANENTLY               "301 Moved Permanently"
+#define NETSTAR_HTTP_STATUS_FOUND                           "302 Found"
+#define NETSTAR_HTTP_STATUS_SEE_OTHER                       "303 See Other"
+#define NETSTAR_HTTP_STATUS_NOT_MODIFIED                    "304 Not Modified"
+#define NETSTAR_HTTP_STATUS_USE_PROXY                       "305 Use Proxy"
+/* 306 Unused */
+#define NETSTAR_HTTP_STATUS_TEMPORARY_REDIRECT              "307 Temporary Redirect"
+#define NETSTAR_HTTP_STATUS_PERMANENT_REDIRECT              "308 Permanent Redirect"
+
+/* 4xx Client Error */
+#define NETSTAR_HTTP_STATUS_BAD_REQUEST                     "400 Bad Request"
+#define NETSTAR_HTTP_STATUS_UNAUTHORIZED                    "401 Unauthorized"
+#define NETSTAR_HTTP_STATUS_PAYMENT_REQUIRED                "402 Payment Required"
+#define NETSTAR_HTTP_STATUS_FORBIDDEN                       "403 Forbidden"
+#define NETSTAR_HTTP_STATUS_NOT_FOUND                       "404 Not Found"
+#define NETSTAR_HTTP_STATUS_METHOD_NOT_ALLOWED              "405 Method Not Allowed"
+#define NETSTAR_HTTP_STATUS_NOT_ACCEPTABLE                  "406 Not Acceptable"
+#define NETSTAR_HTTP_STATUS_PROXY_AUTH_REQUIRED             "407 Proxy Authentication Required"
+#define NETSTAR_HTTP_STATUS_REQUEST_TIMEOUT                 "408 Request Timeout"
+#define NETSTAR_HTTP_STATUS_CONFLICT                        "409 Conflict"
+#define NETSTAR_HTTP_STATUS_GONE                            "410 Gone"
+#define NETSTAR_HTTP_STATUS_LENGTH_REQUIRED                 "411 Length Required"
+#define NETSTAR_HTTP_STATUS_PRECONDITION_FAILED             "412 Precondition Failed"
+#define NETSTAR_HTTP_STATUS_REQUEST_ENTITY_TOO_LARGE        "413 Request Entity Too Large"
+#define NETSTAR_HTTP_STATUS_REQUEST_URI_TOO_LONG            "414 Request-URI Too Long"
+#define NETSTAR_HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE          "415 Unsupported Media Type"
+#define NETSTAR_HTTP_STATUS_REQUESTED_RANGE_NOT_SATISFIABLE "416 Requested Range Not Satisfiable"
+#define NETSTAR_HTTP_STATUS_EXPECTATION_FAILED              "417 Expectation Failed"
+#define NETSTAR_HTTP_STATUS_TEAPOT                          "418 I'm a teapot"
+#define NETSTAR_HTTP_STATUS_MISDIRECTED_REQUEST             "421 Misdirected Request"
+#define NETSTAR_HTTP_STATUS_UNPROCESSABLE_ENTITY            "422 Unprocessable Entity"
+#define NETSTAR_HTTP_STATUS_LOCKED                          "423 Locked"
+#define NETSTAR_HTTP_STATUS_FAILED_DEPENDENCY               "424 Failed Dependency"
+#define NETSTAR_HTTP_STATUS_TOO_EARLY                       "425 Too Early"
+#define NETSTAR_HTTP_STATUS_UPGRADE_REQUIRED                "426 Upgrade Required"
+#define NETSTAR_HTTP_STATUS_PRECONDITION_REQUIRED           "428 Precondition Required"
+#define NETSTAR_HTTP_STATUS_TOO_MANY_REQUESTS               "429 Too Many Requests"
+#define NETSTAR_HTTP_STATUS_REQUEST_HEADER_FIELDS_TOO_LARGE "431 Request Header Fields Too Large"
+#define NETSTAR_HTTP_STATUS_UNAVAILABLE_FOR_LEGAL_REASONS   "451 Unavailable For Legal Reasons"
+
+/* 5xx Server Error */
+#define NETSTAR_HTTP_STATUS_INTERNAL_SERVER_ERROR           "500 Internal Server Error"
+#define NETSTAR_HTTP_STATUS_NOT_IMPLEMENTED                 "501 Not Implemented"
+#define NETSTAR_HTTP_STATUS_BAD_GATEWAY                     "502 Bad Gateway"
+#define NETSTAR_HTTP_STATUS_SERVICE_UNAVAILABLE             "503 Service Unavailable"
+#define NETSTAR_HTTP_STATUS_GATEWAY_TIMEOUT                 "504 Gateway Timeout"
+#define NETSTAR_HTTP_STATUS_HTTP_VERSION_NOT_SUPPORTED      "505 HTTP Version Not Supported"
+#define NETSTAR_HTTP_STATUS_VARIANT_ALSO_NEGOTIATES         "506 Variant Also Negotiates"
+#define NETSTAR_HTTP_STATUS_INSUFFICIENT_STORAGE            "507 Insufficient Storage"
+#define NETSTAR_HTTP_STATUS_LOOP_DETECTED                   "508 Loop Detected"
+#define NETSTAR_HTTP_STATUS_NOT_EXTENDED                    "510 Not Extended"
+#define NETSTAR_HTTP_STATUS_NETWORK_AUTHENTICATION_REQUIRED "511 Network Authentication Required"
+
 #define NETSTAR_HTTP_SERVER_PORT             8080
 #define NETSTAR_HTTP_SERVER_BACKLOG          SOMAXCONN
 
@@ -81,6 +154,7 @@ netstar_http_request_new(struct netstar_http_request *request, const char *buffe
     goto _return;
   if ((end = string_find(buffer, "\r\n", true)) == -1 && (end = string_find(buffer, "\n", true)) == -1)
     goto _return;
+
   if (!(request_line = string_substr(buffer, 0, end)))
     goto _return;
   buffer += (size_t)end;
@@ -90,15 +164,15 @@ netstar_http_request_new(struct netstar_http_request *request, const char *buffe
 
   if (!request_fields[0] || !netstar_http_request_method_is_supported(request_fields[0]))
     goto _return;
-  string_write(request->method, request_fields[0], sizeof(request->method));
+  string_safecopy(request->method, sizeof(request->method), request_fields[0], string_length(request_fields[0]));
 
   if (!request_fields[1])
     goto _return;
-  string_write(request->resource, request_fields[1], sizeof(request->resource));
+  string_safecopy(request->resource, sizeof(request->resource), request_fields[1], string_length(request_fields[1]));
 
   if (!request_fields[2] || !netstar_http_request_version_is_supported(request_fields[2]))
     goto _return;
-  string_write(request->version, request_fields[2], sizeof(request->version));
+  string_safecopy(request->version, sizeof(request->version), request_fields[2], string_length(request_fields[2]));
 
 // if (!(request->headers = netstar_http_request_headers_new(buffers, free)))
 //   goto _return;
@@ -173,10 +247,8 @@ _return:
 static void
 netstar_http_server_client_free(struct netstar_http_server_client *client) {
   if (client) {
-    if (client->socket != SOCKET_INVALID) {
-   // socket_shutdown(client->socket, SHUT_WR);
+    if (client->socket != SOCKET_INVALID)
       socket_close(client->socket), client->socket = SOCKET_INVALID;
-    }
     
     buffer_free(client->buffer);
 
@@ -197,7 +269,7 @@ static void
 netstar_http_server_handle(struct netstar_http_server *server, const char *pattern, netstar_http_server_handle_routine_t routine) {
   struct netstar_http_server_handle handle = { .routine = routine };
 
-  string_write(handle.pattern, pattern, sizeof(handle.pattern));
+  string_safecopy(handle.pattern, sizeof(handle.pattern), pattern, string_length(pattern));
 
   hashset_insert(server->handlers, hashset_clvalue(&handle, sizeof(struct netstar_http_server_handle)));
 }
@@ -274,8 +346,6 @@ netstar_http_server_handle_client(void *context) {
 // hashmap_iterator_t server_clients_iter = NULL;
   hashmap_t *server_clients = NULL;
 
-  netstar_log("#netstar-http-server-thread started\r\n");
-
   if (!(server_reactor = socket_reactor_new()) || !(server_clients = hashmap_new(free, NULL)))
     goto _return;
 
@@ -286,54 +356,6 @@ netstar_http_server_handle_client(void *context) {
     
     struct socket_event server_events[1024] = {0};
     int server_events_count, event;
-/*
-    for (server_clients_iter = hashmap_begin(server_clients); server_clients_iter; server_clients_iter = hashmap_next(server_clients_iter)) {
-      client = (struct netstar_http_server_client *)hashmap_value(server_clients_iter);
-
-      switch (client->state) {
-        case NETSTAR_HTTP_SERVER_CLIENT_STATE_RECEIVE: {
-          client->deadline = netstar_timer(&client->deadline_timer);
-          if (!client->deadline) {
-            char addr[NETWORK_IPADDR6_STRLENGTH] = {0};
-            network_ipaddr6_t *addr6 = network_endpoint_addr6(&client->addr);
-
-            netstar_log("\b \b[ http@server ] client %s:%u closed connection; timed out\r\n",
-              network_ipaddr6_isv4mapped(addr6) ? network_ipaddr4_format((network_ipaddr4_t *)&addr6->u8[12], addr, sizeof(addr)) : network_ipaddr6_format(addr6, addr, sizeof(addr)), ntohs(network_endpoint_port(&client->addr))
-            );
-
-            server_clients_iter = hashmap_prev(server_clients_iter);
-            netstar_http_server_client_disconnect(client);
-          }
-
-          break;
-        }
-  
-        case NETSTAR_HTTP_SERVER_CLIENT_STATE_REQUEST: {
-          network_ipaddr6_t *addr6 = network_endpoint_addr6(&client->addr);
-          char addr[NETWORK_IPADDR6_STRLENGTH] = {0};
-
-          if (netstar_http_server_handle_client_request(server, client) == -1)
-            continue;
-
-          netstar_log("\b \b[ http@server ] client %s:%u %s %s %s\r\n",
-            network_ipaddr6_isv4mapped(addr6) ? network_ipaddr4_format((network_ipaddr4_t *)&addr6->u8[12], addr, sizeof(addr)) : network_ipaddr6_format(addr6, addr, sizeof(addr)), ntohs(network_endpoint_port(&client->addr)),
-            client->request.method,
-            client->request.resource,
-            client->request.version
-          );
-
-          client->state = NETSTAR_HTTP_SERVER_CLIENT_STATE_TERMINATE;
-          break;
-        }
-
-        case NETSTAR_HTTP_SERVER_CLIENT_STATE_TERMINATE: {
-          server_clients_iter = hashmap_prev(server_clients_iter);
-          netstar_http_server_client_disconnect(client);
-          break;
-        }
-      }    
-    }
-*/
 
     if ((server_events_count = socket_reactor_poll(server_reactor, server_events, 1024, &server_reactor_timeout)) <= 0)
       ; // continue;
@@ -413,7 +435,6 @@ _return:
   socket_reactor_free(server_reactor);
   hashmap_free(server_clients);
 
-  netstar_log("#netstar-http-server-thread exited\r\n");
   netstar_thread_exit(thread, NULL);
   return NULL;
 }
@@ -448,17 +469,17 @@ netstar_http_server_response_send(struct netstar_http_server_client *client, con
 }
 
 static ssize_t
-netstar_http_server_response_headers(struct netstar_http_server_client *client, size_t content_length, const char *mime) {
+netstar_http_server_response_headers(struct netstar_http_server_client *client, const char *status, const char *content_type, size_t content_length) {
   char headers[NETSTAR_HTTP_SERVER_RESPONSE_LENGTH] = {0};
+  size_t shift = 0;
 
-  snprintf(headers, sizeof(headers),
-    NETSTAR_HTTP_SERVER_PROTOCOL_VERSION " 200 OK\r\n"
-    "Server: " NETSTAR_HTTP_SERVER_NAME "\r\n"
-    "Content-Type: %s\r\n"
-    "Content-Length: %zu\r\n"
- // "Cache-Control: public, max-age=600\r\n"
-    "Connection: close\r\n"
-    "\r\n", mime, content_length);
+  snprintf(headers, sizeof(headers), NETSTAR_HTTP_SERVER_PROTOCOL_VERSION " %s\r\n"
+                                     "Server: " NETSTAR_HTTP_SERVER_NAME "\r\n", status);
+
+  shift += string_length(headers);
+  snprintf(headers+shift, sizeof(headers)-shift, "Content-Type: %s\r\n"
+                                                 "Content-Length: %zu\r\n"
+                                                 "Connection: close\r\n\r\n", content_type, content_length);
 
   return netstar_http_server_response_send(client, headers, string_length(headers));
 }
@@ -476,7 +497,7 @@ netstar_http_server_response(struct netstar_http_request *request, struct netsta
   if (!(content = netstar_http_server_filesystem_read(resource, mode)))
     return;
 
-  if (netstar_http_server_response_headers(client, buffer_length(content), mime) <= 0)
+  if (netstar_http_server_response_headers(client, NETSTAR_HTTP_STATUS_OK, mime, buffer_length(content)) <= 0)
     return;
   if (netstar_http_server_response_content(client, content) <= 0)
     return;
@@ -506,16 +527,8 @@ netstar_http_server_transport_initialize(struct netstar_http_server *server) {
   if ((server->socket = socket_new(AF_INET6, SOCK_STREAM, IPPROTO_TCP)) == SOCKET_INVALID)
     goto _return;
 
-// server->reuseaddr = 1;
-// if (socket_setoption(server->socket, SOL_SOCKET, SO_REUSEADDR, &server->reuseaddr, sizeof(server->reuseaddr)) == -1)
-//   goto _return;
-
   if (socket_setreuseaddr(server->socket, true) == -1)
     goto _return;
-
-// server->ipv6only = 0;
-// if (socket_setoption(server->socket, IPPROTO_IPV6, IPV6_V6ONLY, &server->ipv6only, sizeof(server->ipv6only)) == -1)
-//   goto _return;
 
   if (socket_setipv6only(server->socket, false) == -1)
     goto _return;

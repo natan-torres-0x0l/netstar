@@ -570,7 +570,7 @@ netstar_utils_args_resource_parse(struct netstar_dns_spoofing_resource *resource
 
   if (!(rname = resource_record[0]))
     goto _return;
-  string_write(resource->name, rname, sizeof(resource->name));
+  string_safecopy(resource->name, sizeof(resource->name), rname, string_length(rname));
 
   if (!(rtype = resource_record[1]))
     goto _return;
@@ -578,7 +578,7 @@ netstar_utils_args_resource_parse(struct netstar_dns_spoofing_resource *resource
 
   if (!(result = resource_record[2]))
     goto _return;
-  string_write(resource->result, result, sizeof(resource->result));
+  string_safecopy(resource->result, sizeof(resource->result), result, string_length(result));
 
   resource->rclass = NETWORK_DNS_CLASS_IN;
   if ((rclass = resource_record[3]))
@@ -1033,7 +1033,10 @@ netstar_utils_filesystem_vendors_read(netstar_vendors_t vendors, const char *fil
 
     if (!fgets(vendor_line, sizeof(vendor_line), vendors_file))
       break;
-    if (string_chomp(vendor_line) && vendor_line[0] == '#')
+
+    string_safetrim(vendor_line, sizeof(vendor_line), string_const("\r\n"));
+
+    if (vendor_line[0] == '#')
       continue;
 
     if (!netstar_utils_args_vendor_parse(&vendor, vendor_line))
@@ -1066,7 +1069,10 @@ netstar_utils_filesystem_hosts_read(netstar_hosts_t hosts, int inet, const char 
 
     if (!fgets(hosts_line, sizeof(hosts_line), hosts_file))
       break;
-    if (string_chomp(hosts_line) && hosts_line[0] == '#')
+
+    string_safetrim(hosts_line, sizeof(hosts_line), string_const("\r\n"));
+
+    if (hosts_line[0] == '#')
       continue;
 
     netstar_utils_args_hosts_parse(hosts, inet, hosts_line);
@@ -1096,7 +1102,10 @@ netstar_utils_filesystem_preroutes_read(netstar_redirect_preroutes_t preroutes, 
 
     if (!fgets(preroutes_line, sizeof(preroutes_line), preroutes_file))
       break;
-    if (string_chomp(preroutes_line) && preroutes_line[0] == '#')
+
+    string_safetrim(preroutes_line, sizeof(preroutes_line), string_const("\r\n"));
+
+    if (preroutes_line[0] == '#')
       continue;
 
     netstar_utils_args_preroutes_parse(preroutes, preroutes_line);
@@ -1126,7 +1135,10 @@ netstar_utils_filesystem_resources_read(netstar_dns_spoofing_resources_t resourc
 
     if (!fgets(resource_line, sizeof(resource_line), resources_file))
       break;
-    if (string_chomp(resource_line) && resource_line[0] == '#')
+
+    string_safetrim(resource_line, sizeof(resource_line), string_const("\r\n"));
+
+    if (resource_line[0] == '#')
       continue;
 
     netstar_utils_args_resources(resources, resource_line);
